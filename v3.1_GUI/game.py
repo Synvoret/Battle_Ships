@@ -2,7 +2,6 @@ import random
 import tkinter as tk
 from math import ceil
 from tkinter import messagebox
-# from data import sea_zone
 
 try:
     from ctypes import windll
@@ -22,7 +21,6 @@ game_statistic = {
          "hit": 0, "shots": 0},
 }
 
-
 class Zone(tk.Button):
     def __init__(self, who, row: int, col: int):
         self.master = who
@@ -39,15 +37,15 @@ class Zone(tk.Button):
         self.checking_zone = checking_zone
         self.move = move  # place "ship" or "shot"
 
-        top_left_corner = 1, 10, 11  # 0
-        top_side = -1, 1, 9, 10, 11  # from 1 to 8 every 1
-        top_right_corner = -1, 9, 10  # 9
-        right_side = -11, -10, -1, 9, 10  # from 19 to 89 every 10
-        bottom_right_corner = -11, -10, -1  # 99
-        bottom_side = -11, -10, -9, -1, 1  # # from 91 to 98 every 1
-        bottom_left_corner = -10, -9, 1  # 90
-        left_side = -10, -9, 1, 10, 11  # from 10 to 80 every 10
-        inside = -11, -10, -9, -1, 1, 9, 10, 11  # rest of cases
+        top_left_corner = (1, 10, 11)  # 0
+        top_side = (-1, 1, 9, 10, 11 ) # from 1 to 8 every 1
+        top_right_corner = (-1, 9, 10)  # 9
+        right_side = (-11, -10, -1, 9, 10)  # from 19 to 89 every 10
+        bottom_right_corner = (-11, -10, -1 ) # 99
+        bottom_side = (-11, -10, -9, -1, 1)  # # from 91 to 98 every 1
+        bottom_left_corner = (-10, -9, 1)  # 90
+        left_side = (-10, -9, 1, 10, 11)  # from 10 to 80 every 10
+        inside = (-11, -10, -9, -1, 1, 9, 10, 11)  # rest of cases
 
         around_zones = {
             "top_left_corner": (1, 10, 11),  # 0
@@ -697,4 +695,6 @@ message_text = message_area.create_text(400, 60, width=800, text="Battle Ships G
 message_area.grid(row=2, column=0, columnspan=2, padx=20, pady=20)
 
 random_fleet('cpu')
-root.mainloop()
+
+if __name__ == '__main__':
+    root.mainloop()
