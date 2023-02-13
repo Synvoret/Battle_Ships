@@ -3,6 +3,8 @@
 /v2.0_GUI
 /v3.0_GUI
 /v4.0_GUI
+# databases ignore
+v3.1_GUI/game.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -130,6 +132,7 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
 
 # Pyre type checker
 .pyre/
