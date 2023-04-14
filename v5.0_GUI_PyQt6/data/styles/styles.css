@@ -1,0 +1,49 @@
+MainWindow {
+    background-image: url("data/images/main/c.png");
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+#menu_bar,
+#menu_game,
+#menu_help {
+    background-color: rgba(200, 200, 200, 1);
+    background-image: url("data/images/game/menu.png");
+}
+
+#player_widget,
+#cpu_widget,
+#text {
+    background-image: url("data/images/game/papirus_v.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+#high_scores_table {
+    background-image: url("data/images/game/papirus.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+#button {
+    background-image: url("data/images/game/button.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    font-weight: bold;
+}
+
+#button:hover {
+    background-color: transparent;
+}
+
+/* QMenu::separator {
+    background-color: red;
+    height: 10px;
+    margin: 5px 0px 5px 0px;
+} */
+
+/* #high_scores_table {
+    background-color: transparent;
+} */

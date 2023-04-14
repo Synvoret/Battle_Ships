@@ -3,8 +3,16 @@
 /v2.0_GUI
 /v3.0_GUI
 /v4.0_GUI
-# databases ignore
+# in v3.1_GUI databases ignore
 v3.1_GUI/game.db
+# in v5.0_GUI_PyQt6 ignore
+v5.0_GUI_PyQt6/data/db/game.db
+v5.0_GUI_PyQt6/structure.xlsx
+v5.0_GUI_PyQt6/examples.py
+v5.0_GUI_PyQt6/gamex.py
+v5.0_GUI_PyQt6/x.py
+v5.0_GUI_PyQt6/xx.ui
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

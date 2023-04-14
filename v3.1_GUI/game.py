@@ -27,7 +27,7 @@ class Zone(tk.Button):
         # super().__init__(bd=0.5, master=self.master, cursor="hand2", state="disabled", highlightthickness=0, image=self.image) # for ttk.Button
         self.grid(row=self.row, column=self.column)
 
-    def check_coordinate(self, who: str, checking_zone: int, move: str) -> bool:
+    def check_coordinate(self, who: str, checking_zone: int, move: str):
         self.who = who
         self.checking_zone = checking_zone
         self.move = move  # place "ship" or "shot"
@@ -60,6 +60,7 @@ class Zone(tk.Button):
                 for j in range(1, 9):
                     x.add(i + j)
             return x
+        # xxx = {i+j for i in range(10, 81, 10) for j in range(1, 9)}
 
         zones = {
             "top_left_corner": 0,  # 0
@@ -73,13 +74,14 @@ class Zone(tk.Button):
             "inside": inside_zones(),  # rest of cases
         }
 
-        # when sending Fleets (self.move = 'ship')
+        # board
         board = []
         if self.who == 'player':
             board = player_board
         elif self.who == 'cpu':
             board = cpu_board
 
+        # when sending Fleets (self.move = 'ship')
         if self.checking_zone == 0:
             for i in top_left_corner:
                 if board[self.checking_zone + i]['image'] == "pyimage2":
@@ -191,7 +193,7 @@ class Zone(tk.Button):
                     return False
             elif self.who == "cpu":
                 calculate_value_from_game_statistic(f"player_ships", -1)
-                # .......................# wrzucenie pozycji trafionego statku do "fire_zones
+                # ....................... # wrzucenie pozycji trafionego statku do "fire_zones
                 if get_value_from_game_statistics('player_ships') == 0:
                     self.end_battle('cpu')
                     return False
@@ -277,10 +279,10 @@ def sea_zone(who: str) -> list:
         for k in range(0, 10):
             globals()['zone{}'.format(i)] = board.append(Zone(who, j, k))  # tworzenie wielu zmiennych w pętli
             i += 1
+    print(globals())
     return board
 
 def random_fleet(who: str):
-    who = who
     global player_board, cpu_board
     update_game_statistics_table(f"{who}_ships", 0)
     if who == 'player':
@@ -415,7 +417,7 @@ def setup():
 
 
 def reset_game():
-    global game_statistic, player_board, cpu_board
+    global player_board, cpu_board
     player_board = sea_zone(player_sea_zone)
     cpu_board = sea_zone(cpu_sea_zone)
     game_statistics_table_default()
