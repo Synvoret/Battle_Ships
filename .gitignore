@@ -4,20 +4,11 @@
 # db ignore
 *.db
 
-/v1.0_ASCII
 # in v3.1_GUI databases ignore
 v2.0_GUI_Tkinter/game.db
 # in v3.0_GUI_PyQt6 ignore
-v3.0_GUI_PyQt6/_robocze/
+v3.0_GUI_PyQt6/_robocze
 v3.0_GUI_PyQt6/.idea/
-v5.0_GUI_PyQt6/data/db/game.db
-v5.0_GUI_PyQt6/examples.py
-v5.0_GUI_PyQt6/gamex.py
-v5.0_GUI_PyQt6/x.py
-v5.0_GUI_PyQt6/xx.ui
-v5.0_GUI_PyQt6/.idea
-v5.0_GUI_PyQt6/_robocze/
-
 
 
 # Byte-compiled / optimized / DLL files

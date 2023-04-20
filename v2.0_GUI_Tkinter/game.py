@@ -562,7 +562,7 @@ def back_to_setup():
 
 
 def about():
-    messagebox.showinfo('Battle Ships v3.1',
+    messagebox.showinfo('Battle Ships v2.0',
                         'About Game:'
                         '\n\nDate: \t10 VI 2022'
                         '\nAuthor: \tLukasz Szabat'
@@ -571,8 +571,8 @@ def about():
 
 
 def rules():
-    messagebox.showinfo('Battle Ships v3.1',
-                        'Rules Game: v3.1'
+    messagebox.showinfo('Battle Ships v2.0',
+                        'Rules Game: v2.0'
                         '\n\nDefault amount ships:\t4'
                         '\nAvailable amount ships:\t1 - 10'
                         '\nDefault level:\t\tNormal'
@@ -586,7 +586,7 @@ def rules():
 
 root = tk.Tk()
 root.resizable(False, False)
-root.title("Battle Ships v3.1")
+root.title("Battle Ships v2.0")
 root.config(bg=COLOR)
 root.call('wm', 'iconphoto', root, tk.PhotoImage(file='images/fav.png'))
 

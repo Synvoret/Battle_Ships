@@ -1,0 +1,14 @@
+{
+    "game_time": {
+        "date": "30.05.2022",
+        "longest_playing_time": "0.00 [ms]"
+    },
+    "great_battle": {
+        "date": "30.05.2022",
+        "greatest_battle": ""
+    },
+    "most_shots": {
+        "date": "30.05.2022",
+        "most_shots_in_one_battle": 0
+    }
+}

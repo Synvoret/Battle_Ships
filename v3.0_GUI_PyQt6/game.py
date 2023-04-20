@@ -1110,6 +1110,6 @@ if __name__ == '__main__':
     hit_sound = HitSound()
     
     app.setStyleSheet(style_sheet)
-    window.show()
-    # window.showMaximized()
+    # window.show()
+    window.showMaximized()
     sys.exit(app.exec())
