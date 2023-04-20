@@ -1,13 +1,16 @@
+
+
 /battle_ships
+# db ignore
+*.db
+
 /v1.0_ASCII
-/v2.0_GUI
-/v3.0_GUI
-/v4.0_GUI
 # in v3.1_GUI databases ignore
-v3.1_GUI/game.db
-# in v5.0_GUI_PyQt6 ignore
+v2.0_GUI_Tkinter/game.db
+# in v3.0_GUI_PyQt6 ignore
+v3.0_GUI_PyQt6/_robocze/
+v3.0_GUI_PyQt6/.idea/
 v5.0_GUI_PyQt6/data/db/game.db
-v5.0_GUI_PyQt6/structure.xlsx
 v5.0_GUI_PyQt6/examples.py
 v5.0_GUI_PyQt6/gamex.py
 v5.0_GUI_PyQt6/x.py
