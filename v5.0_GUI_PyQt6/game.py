@@ -1,12 +1,12 @@
-import sys, os, random, itertools, re
+import sys, os, random, itertools, re, typing, time
 from math import ceil
 
 from data.db.db import *
 # from data.db import db
-from data.game.layouts import layout_high_scores, layout_rules, layout_about
+# from data.game.layouts import layout_high_scores, layout_rules, layout_about
 
-from PyQt6.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QGridLayout, QLabel, QGraphicsScene, QGraphicsView, QPushButton, QSizePolicy, QHBoxLayout, QMenuBar, QMenu, QSpinBox, QLineEdit, QStackedWidget, QStackedLayout, QInputDialog, QMessageBox, QTableWidget,QTableWidgetItem, QLayout, QBoxLayout, QGroupBox, QStyle, QTextEdit
-from PyQt6.QtGui import QPixmap, QIcon, QImage, QBrush, QFont, QPainter, QAction, QCursor, QPalette, QColor, QTextCursor
+from PyQt6.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QGridLayout, QLabel, QGraphicsScene, QGraphicsView, QPushButton, QSizePolicy, QHBoxLayout, QMenuBar, QMenu, QSpinBox, QLineEdit, QStackedWidget, QStackedLayout, QInputDialog, QMessageBox, QTableWidget, QTableWidgetItem, QLayout, QBoxLayout, QGroupBox, QStyle, QTextEdit, QFileDialog
+from PyQt6.QtGui import QPixmap, QIcon, QImage, QBrush, QFont, QPainter, QAction, QCursor, QPalette, QColor, QTextCursor, QGuiApplication
 from PyQt6.QtCore import QSize, Qt, QRectF, QTimer, QFileInfo, QBuffer, QCoreApplication, QUrlQuery, QRect
 from PyQt6.QtSql import QSqlDatabase, QSqlQuery
 from PyQt6 import QtCore, QtGui
@@ -22,6 +22,7 @@ class MainWindow(QMainWindow):
         # making new tables, default
         game_statistics_table_default()
         high_scores_table_default()
+        save_game_table_default()
         self.initUI()
     
     def initUI(self):
@@ -38,11 +39,23 @@ class MainWindow(QMainWindow):
         self.menu_help = QMenu("Help", self.menu_bar)
         self.menu_help.setObjectName("menu_help")
         self.menu_bar.addMenu(self.menu_game)
-        self.menu_bar.addMenu(self.menu_help)        
+        self.menu_bar.addMenu(self.menu_help)
+        self.action_load_game = QAction("Load Game", self)
+        self.action_load_game.setObjectName('load_game')
+        self.action_load_game.setIcon(QIcon(r"data/images/main/load.png"))
+        self.action_load_game.triggered.connect(lambda: self.switch_layouts("Load Game"))
+        self.action_save_game = QAction("Save Game", self)
+        self.action_save_game.setObjectName('save_game')
+        self.action_save_game.setIcon(QIcon(r"data/images/main/save.PNG"))
+        self.action_save_game.triggered.connect(lambda: self.switch_layouts("Save Game"))
+        self.action_settings = QAction("Settings", self)
+        self.action_settings.setObjectName("settings")
+        self.action_settings.setIcon(QIcon(r"data\images\main\settings.png"))
+        # self.action_settings.triggered.connect()
         self.action_high_scores = QAction("High Scores", self)
         self.action_high_scores.setObjectName('high_scores')
         self.action_high_scores.setIcon(QIcon(r"data/images/main/top10.png"))
-        self.action_high_scores.triggered.connect(lambda: self.switch_layouts("High Scores"))        
+        self.action_high_scores.triggered.connect(lambda: [self.fill_out_highscore_table(), self.switch_layouts("High Scores")])        
         self.action_exit = QAction("Exit", self) # making element of action
         self.action_exit.setObjectName('action_exit')
         self.action_exit.setIcon(QIcon(r"data/images/main/exit.png"))
@@ -55,6 +68,9 @@ class MainWindow(QMainWindow):
         self.action_about.triggered.connect(lambda: self.switch_layouts("About"))
         
         # adding action of element to menu
+        self.menu_game.addAction(self.action_load_game)
+        self.menu_game.addAction(self.action_save_game)
+        self.menu_game.addAction(self.action_settings)
         self.menu_game.addAction(self.action_high_scores)
         self.menu_game.addSeparator()
         self.menu_game.addAction(self.action_exit)
@@ -104,6 +120,15 @@ class MainWindow(QMainWindow):
         self.player_widget_layout.addWidget(self.player_actions)        
         self.player_widget.setLayout(self.player_widget_layout)
         
+        
+        
+        
+        
+        
+        
+        
+        
+        
         # CPU widget
         self.cpu_widget = QWidget(parent=self.central_widget)
         self.cpu_widget.setObjectName('cpu_widget')
@@ -146,7 +171,6 @@ class MainWindow(QMainWindow):
         
         # MENU container
         self.menu_widget = QWidget(self.central_widget)
-        self.menu_widget.setObjectName('menu_widget')
         self.menu_widget.setMaximumSize(200, 300)        
         self.widget3 = QWidget(self.menu_widget)        
         self.menu_container_layout = QVBoxLayout(self.widget3)
@@ -159,7 +183,19 @@ class MainWindow(QMainWindow):
         self.main_layout = QHBoxLayout()
         self.main_layout.addWidget(self.player_widget)
         self.main_layout.addWidget(self.cpu_widget)
-        self.main_layout.addWidget(self.menu_widget)       
+        self.main_layout.addWidget(self.menu_widget)
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         # HIGH SCORES layout
         self.high_scores_layout = QVBoxLayout()
@@ -169,40 +205,38 @@ class MainWindow(QMainWindow):
         self.high_scores_table.setColumnCount(6)
         column_names = labels()
         self.high_scores_table.setHorizontalHeaderLabels(column_names)
-        datas = read_high_scores()
-        self.high_scores_table.setRowCount(len(datas))
-        self.high_scores_table.setSortingEnabled(True)
-        for row, data in enumerate(datas):
-            for column, value in enumerate(data.values()):
-                item = QTableWidgetItem(str(value))
-                self.high_scores_table.setItem(row, column, item)
         self.back_button = QPushButton('<- Back', clicked=lambda: self.switch_layouts("<- Back"))
         self.reset_button = QPushButton("Reset High Scores", clicked=lambda: self.reply(reset_high_scores, 'RESET High Scores!', 'Are you sure You want to DELETE high scores?? '))
         self.buttons(self.reset_button)
         self.buttons(self.back_button)
-        self.high_scores_layout.addWidget(QLabel('high_scores....'))
+        self.high_scores_layout.addWidget(QLabel('HIGH SCORES!'))
         self.high_scores_layout.addWidget(self.high_scores_table)
         self.high_scores_layout.addWidget(self.reset_button)
         self.high_scores_layout.addWidget(self.back_button)
         # layout_high_scores(self)
         
+        
+        
+        
+        
         # RULES layout
         self.rules_layout = QVBoxLayout()
-        rules = {'title': QLabel('Battle Ships v5.0'),
-                'rules': QLabel('Rules Game: v5.0'),
-                'amount ships (default)': QLabel('4'),
-                'max ships': QLabel('10'),
-                'amount ships (default)': QLabel('4'),
-                'level (default)': QLabel('Normal'),
-                'difficulty levels': QLabel('Easy, Normal, Hard'),
-                'level rules - easy': QLabel('Player +1 ship'),
-                'level rules - hard': QLabel('CPU +1 ship'),
-                'Available shots': QLabel('Active ships / 2'),
-                'Ship by Ship': QLabel('No')
+        rules = {
+            'title': QLabel('Battle Ships v5.0'),
+            'rules': QLabel('Rules Game: v5.0'),
+            'amount ships (default)': QLabel('4'),
+            'max ships': QLabel('10'),
+            'amount ships (default)': QLabel('4'),
+            'level (default)': QLabel('Normal'),
+            'difficulty levels': QLabel('Easy, Normal, Hard'),
+            'level rules - easy': QLabel('Player +1 ship'),
+            'level rules - hard': QLabel('CPU +1 ship'),
+            'Available shots': QLabel('Active ships / 2'),
+            'Ship by Ship': QLabel('No')
             }
         self.back_button = QPushButton('<- Back', clicked=lambda: self.switch_layouts("<- Back"))
         self.buttons(self.back_button)
-        self.descriptions(rules, self.rules_layout)
+        self.descriptions(rules, self.rules_layout, 'rules')
         self.rules_layout.addWidget(self.back_button)
         # layout_rules(self)
         
@@ -210,21 +244,47 @@ class MainWindow(QMainWindow):
         self.about_layout = QVBoxLayout()
         self.back_button = QPushButton('<- Back', clicked=lambda: self.switch_layouts("<- Back"))
         self.buttons(self.back_button)
-        self.about = {
+        about = {
             'name': QLabel('Battle Ships v5.0'),
-            'date': QLabel('April 12th, 2023'),
+            'date': QLabel('April 30th, 2023'),
             'author': QLabel('Lukasz Szabat'),
             'email': QLabel('synvoret@gmail.com')
         }        
-        self.descriptions(self.about, self.about_layout)
+        self.descriptions(about, self.about_layout, 'about')
         self.about_layout.addWidget(self.back_button)
         # layout_about(self)
         
+        # LOAD GAME layout
+        self.load_game_layout = QVBoxLayout()
+        # self.empty_widget = QWidget()
+        # self.empty_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        # self.load_button = QPushButton("Load Game", clicked=lambda: self.load_game(self.load_position))
+        self.back_button = QPushButton('<- Back', clicked=lambda: self.switch_layouts("<- Back"))
+        # self.buttons(self.load_button)
+        self.buttons(self.back_button)
+        self.descriptions({}, self.load_game_layout, 'load')
+        # self.load_game_layout.addWidget(QWidget())
+        # self.load_game_layout.addWidget(self.load_button)
+        self.load_game_layout.addWidget(self.back_button)
+        
+        # SAVE GAME layout
+        self.save_game_layout = QVBoxLayout()
+        self.lines = QHBoxLayout()
+        # self.save_game_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.back_button = QPushButton('<- Back', clicked=lambda: self.switch_layouts("<- Back"))
+        self.buttons(self.back_button) 
+        self.descriptions({}, self.save_game_layout, 'save')
+        self.save_game_layout.addWidget(self.back_button)
+        
+        
+        
+        
+        
         # STACKED layouts
         self.stacked_layout = QStackedLayout(self.central_widget)
-        for i in range(4):
+        for i in range(6):
             widget = QWidget()
-            widget.setMaximumSize(900, 650)
+            # widget.setMaximumSize(900, 650)
             x = (self.width() - widget.width()) // 2
             y = (self.height() - widget.height()) // 2
             widget.setGeometry(x, y, widget.width(), widget.height())
@@ -232,7 +292,9 @@ class MainWindow(QMainWindow):
         self.stacked_layout.widget(0).setLayout(self.main_layout)
         self.stacked_layout.widget(1).setLayout(self.about_layout)
         self.stacked_layout.widget(2).setLayout(self.rules_layout)
-        self.stacked_layout.widget(3).setLayout(self.high_scores_layout)        
+        self.stacked_layout.widget(3).setLayout(self.high_scores_layout)
+        self.stacked_layout.widget(4).setLayout(self.save_game_layout)
+        self.stacked_layout.widget(5).setLayout(self.load_game_layout)
         self.stacked_layout.maximumSize()
         
         self.setCentralWidget(self.central_widget)
@@ -256,6 +318,39 @@ class MainWindow(QMainWindow):
         self.cpu_statistic_5.setText(f"Missed Shots: {get_value_from_game_statistics('cpu_missed')}")
         self.cpu_statistic_6.setText(f"Effective: {get_value_from_game_statistics('cpu_effective')}")
     
+    def load_game(self, name):
+        print(name)
+        loaded_data: dict = load_file(name)
+        load_name = name
+        for data in loaded_data.items():
+            update_game_statistics_table(data[0], data[1])
+        self.stat()
+    
+    def save_game(self, name):
+        datas_to_save = read_all_values_from_game_statistics()
+        
+        if len(read_files_list()) > 10:
+            return
+        
+        save_name = name.text()
+        
+        if len(save_name) == 0:
+            return
+        
+        if save_file(save_name, datas_to_save) is not False:
+            print('zapis stanu gry przebiegł pomyślnie')
+        else:
+            print('nie zapisałem bo taka nazwa istnieje w bazie danych')
+    
+    def fill_out_highscore_table(self):
+        datas = read_high_scores()
+        self.high_scores_table.setRowCount(len(datas))
+        self.high_scores_table.setSortingEnabled(True)
+        for row, data in enumerate(datas):
+            for column, value in enumerate(data.values()):
+                item = QTableWidgetItem(str(value))
+                self.high_scores_table.setItem(row, column, item)
+    
     def switch_layouts(self, _from):
         '''Method responsible for switching beetwen layouts.'''
         if _from == "<- Back":
@@ -266,18 +361,127 @@ class MainWindow(QMainWindow):
             self.stacked_layout.setCurrentWidget(self.stacked_layout.widget(2))
         elif _from == "High Scores":
             self.stacked_layout.setCurrentWidget(self.stacked_layout.widget(3))
+        elif _from == "Save Game":
+            self.stacked_layout.setCurrentWidget(self.stacked_layout.widget(4))
+        elif _from == "Load Game":
+            self.stacked_layout.setCurrentWidget(self.stacked_layout.widget(5))
     
-    def descriptions(self, d: dict, layout):
-        for item in d.items():
-            line = QHBoxLayout()
-            title = item[0].title()
-            title_text = item[1].text()
-            text = QLabel(f"{title}: {title_text}")
-            text.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            text.setObjectName('text')
-            text.setFont(QFont('Arial', 12))
-            line.addWidget(text)
-            layout.addLayout(line)
+    def descriptions(self, d: dict, layout, desc):
+        if desc == 'load':
+            loads = read_files_list()
+            title_loads = [QPushButton(load[0]) for load in loads]
+            load_image = QPixmap('data\images\main\load.png').scaled(QSize(30, 30))
+            load_icon = QIcon(load_image)
+
+            def set_icon(button, buttons=title_loads):
+                try:
+                    if button.icon().pixmap(button.icon().availableSizes()[0]).toImage() == load_image.toImage():
+                        button.setIcon(QIcon())
+                except:
+                    button.setIcon(load_icon)
+                for btn in buttons:
+                    if btn != button and btn.icon():
+                        btn.setIcon(QIcon())
+            
+            def load_with_icon(buttons=title_loads):
+                for but in buttons:
+                    try:
+                        if but.icon().pixmap(but.icon().availableSizes()[0]).toImage() == load_image.toImage():
+                            self.load_game(but.text())
+                    except IndexError:
+                        pass
+            
+            def delete_save(buttons=title_loads):
+                for but in buttons:
+                    try:
+                        if but.icon().pixmap(but.icon().availableSizes()[0]).toImage() == load_image.toImage():
+                            delete_file(but.text())
+                    except IndexError:
+                        pass
+            
+            for i in range(0, len(title_loads)):
+                line = QHBoxLayout()
+                self.load_position = title_loads[i]
+                self.load_position.clicked.connect(lambda _, b=self.load_position: set_icon(b))
+                self.load_position.setObjectName('title')
+                self.load_position.setFont(QFont('Arial', 12))
+                self.load_position.setMaximumSize(300, 30)
+                line.addWidget(self.load_position)
+                layout.addLayout(line)
+            self.load_button = QPushButton("Load Game", clicked=load_with_icon)
+            self.delete_button = QPushButton("Delete Save", clicked=lambda: [delete_save(), self.switch_layouts("Load Game")])
+            self.buttons(self.load_button)
+            self.buttons(self.delete_button)
+            self.load_game_layout.addWidget(QWidget())
+            self.load_game_layout.addWidget(self.load_button)
+            self.load_game_layout.addWidget(self.delete_button)
+        
+        elif desc == 'save':
+            loads = read_files_list()
+            save_image = QPixmap('data\images\main\save.PNG').scaled(QSize(30, 30))
+            save_icon = QIcon(save_image)
+            for i in range(10):
+                if i < len(loads):
+                    d[i] = QPushButton(loads[i][0])
+                else:
+                    d[i] = QLineEdit()
+            
+            def set_icon(button, buttons=d):
+                try:
+                    if button.icon().pixmap(button.icon().availableSizes()[0]).toImage() == save_image.toImage():
+                        button.setIcon(QIcon())
+                except:
+                    button.setIcon(save_icon)
+                for btn in buttons:
+                    if isinstance(buttons[btn], QPushButton):
+                        if buttons[btn] != button and buttons[btn].icon():
+                            buttons[btn].setIcon(QIcon())
+            
+            def delete_one_save(button, buttons=d):
+                for btn in buttons:
+                    try:
+                        if isinstance(buttons[btn], QPushButton):
+                            if buttons[btn].icon().pixmap(buttons[btn].icon().availableSizes()[0]).toImage() == save_image.toImage():
+                                delete_file(buttons[btn].text())
+                    except IndexError:
+                        pass
+            
+            for i in range(len(list(d.values()))):
+                line = QHBoxLayout()
+                self.widget = d[i]
+                self.widget.setObjectName('title')
+                self.widget.setFont(QFont('Arial', 12))
+                self.widget.setMaximumSize(300, 30)
+                if isinstance(self.widget, QPushButton):
+                    self.widget.setText(self.widget.text())
+                    self.widget.clicked.connect(lambda _, b=self.widget : set_icon(b))
+                elif isinstance(self.widget, QLineEdit):
+                    self.widget.clearFocus()
+                    self.widget.setPlaceholderText('Empty')
+                    self.widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                    self.widget.returnPressed.connect(lambda text=self.widget: self.save_game(text))
+                line.addWidget(self.widget)
+                layout.addLayout(line)
+            
+            self.save_button = QPushButton("Save Game", clicked=lambda: self.save_game(self.widget))
+            self.delete_one_save = QPushButton("Delete Save", clicked=delete_one_save)
+            self.buttons(self.save_button)
+            self.buttons(self.delete_one_save)
+            self.save_game_layout.addWidget(QWidget())
+            self.save_game_layout.addWidget(self.save_button)
+            self.save_game_layout.addWidget(self.delete_one_save)
+        
+        else:
+            for item in d.items():
+                line = QHBoxLayout()
+                title = item[0].title().replace('_', ' ')
+                title_text = item[1].text()
+                text = QLabel(f"{title}: {title_text}")
+                text.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                text.setObjectName('text')
+                text.setFont(QFont('Arial', 12))
+                line.addWidget(text)
+                layout.addLayout(line)
     
     def buttons(self, button):
         button.setObjectName('button')
@@ -363,9 +567,6 @@ class MainWindow(QMainWindow):
         update_game_statistics_table('player_available_shots', player_available_shots) # aktualizuje dane w bazie danych
         self.stat()
         calculate_value_from_game_statistic('turns', 1)
-        if get_value_from_game_statistics('player_ships') == 0:
-            self.end_game('cpu')
-            return
         for i in range(0, len(self.cpu_board)):
             try:
                 self.cpu_board[i].clicked.disconnect()
@@ -376,9 +577,9 @@ class MainWindow(QMainWindow):
     def cpu_turn(self):
         cpu_avaiable_shots = ceil(get_value_from_game_statistics('cpu_ships') * 0.5)
         update_game_statistics_table('cpu_available_shots', cpu_avaiable_shots)
-        if get_value_from_game_statistics('cpu_ships') == 0:
-            self.end_game('player')
-            return
+        # if get_value_from_game_statistics('cpu_ships') == 0:
+        #     self.end_game('player')
+        #     return
         i = 0 # zliczanie oddanych strzałów
         i_max = get_value_from_game_statistics('cpu_available_shots') # maksymalna ilość strzałów w turze
         while i < i_max:
@@ -423,54 +624,54 @@ class MainWindow(QMainWindow):
         elif who == 'cpu':
             self.board == self.cpu_board
             self.action = self.cpu_actions
-            print(f'stawiam w strefie {checking_zone}')
+            # print(f'stawiam w strefie {checking_zone}')
         
         # in SENDING ships (move = 'ship')
         if checking_zone == 0:
             for i in top_left_corner:
                 if self.board[checking_zone + i].icon().pixmap(self.board[checking_zone + i].icon().availableSizes()[0]).toImage() == self.ship_image.toImage():
-                    print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
+                    # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
                     # self.action.setText('Too close another Ship!')
                     return False
         elif checking_zone in tuple(range(1, 9)):
             for i in top_side:
                 if self.board[checking_zone + i].icon().pixmap(self.board[checking_zone + i].icon().availableSizes()[0]).toImage() == self.ship_image.toImage():
-                    print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
+                    # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
                     return False
         elif checking_zone == 9:
             for i in top_right_corner:
                 if self.board[checking_zone + i].icon().pixmap(self.board[checking_zone + i].icon().availableSizes()[0]).toImage() == self.ship_image.toImage():
-                    print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
+                    # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
                     return False
         elif checking_zone in tuple(range(19, 90, 10)):
             for i in right_side:
                 if self.board[checking_zone + i].icon().pixmap(self.board[checking_zone + i].icon().availableSizes()[0]).toImage() == self.ship_image.toImage():
-                    print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
+                    # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
                     return False
         elif checking_zone == 99:
             for i in bottom_right_corner:
                 if self.board[checking_zone + i].icon().pixmap(self.board[checking_zone + i].icon().availableSizes()[0]).toImage() == self.ship_image.toImage():
-                    print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
+                    # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
                     return False
         elif checking_zone in tuple(range(91, 99)):
             for i in bottom_side:
                 if self.board[checking_zone + i].icon().pixmap(self.board[checking_zone + i].icon().availableSizes()[0]).toImage() == self.ship_image.toImage():
-                    print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
+                    # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
                     return False
         elif checking_zone == 90:
             for i in bottom_left_corner:
                 if self.board[checking_zone + i].icon().pixmap(self.board[checking_zone + i].icon().availableSizes()[0]).toImage() == self.ship_image.toImage():
-                    print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
+                    # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
                     return False
         elif checking_zone in tuple(range(10, 81, 10)):
             for i in left_side:
                 if self.board[checking_zone + i].icon().pixmap(self.board[checking_zone + i].icon().availableSizes()[0]).toImage() == self.ship_image.toImage():
-                    print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
+                    # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
                     return False
         else:
             for i in inside:
                 if self.board[checking_zone + i].icon().pixmap(self.board[checking_zone + i].icon().availableSizes()[0]).toImage() == self.ship_image.toImage():
-                    print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
+                    # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
                     return False
     
     def shot(self, who: str, zone: int):
@@ -503,9 +704,16 @@ class MainWindow(QMainWindow):
             elif self.player_board[zone].icon().pixmap(self.player_board[zone].icon().availableSizes()[0]).toImage() == self.missed_image.toImage():
                 calculate_value_from_game_statistic(f"{who}_missed", 1)
         
+        if get_value_from_game_statistics('player_ships') == 0:
+            self.end_game('cpu')
+        elif get_value_from_game_statistics('cpu_ships') == 0:
+            self.end_game('player')
+        
         self.stat()
     
     def end_game(self, winner: str):
+        self.end_time_game = time.time()
+        self.total_time_game = str(round((self.end_time_game - self.start_time_game) / 60, 2)) + ' min.'
         for i in range(0, len(self.cpu_board)):
             try:
                 self.cpu_board[i].clicked.disconnect()
@@ -529,12 +737,9 @@ class MainWindow(QMainWindow):
         turns = get_value_from_game_statistics('turns')
         message = get_value_from_game_statistics(f"{winner}_name") + f" won after {turns} turns!"
         
-        # wrzucam high scorsy
         player_name = get_value_from_game_statistics(f"{winner}_name")
         effective = get_value_from_game_statistics(f"{winner}_effective")
-        game_time = '120 s'
-        date = '2023-04-13'
-        add_high_scores(player_name, effective, turns, game_time, date)
+        add_high_scores(player_name, effective, turns, self.total_time_game)
         self.player_actions.setText(message)
     
     def start_battle(self):
@@ -590,6 +795,7 @@ class MainWindow(QMainWindow):
         for i in range(0, len(self.player_board)):
             self.player_board[i].setEnabled(True)
             self.cpu_board[i].setEnabled(True)
+        self.start_time_game = time.time()
         self.player_turn() # kto zaczyna grę
         self.stat()
     
@@ -646,7 +852,7 @@ class MainWindow(QMainWindow):
         while get_value_from_game_statistics(f'{who}_ships') < self.level_game(who):
             random_zone = random.randint(0, 99)
             if who == 'player':
-                self.ship('player', random_zone)
+                self.ship(who='player', zone=random_zone)
             elif who == 'cpu':
                 self.ship('cpu', random_zone)
         self.stat()
@@ -783,7 +989,7 @@ with open('data/styles/styles.css', "r") as file:
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = MainWindow()    
+    window = MainWindow()
     app.setStyleSheet(style_sheet)
     window.show()
     # window.showMaximized()

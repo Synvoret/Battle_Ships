@@ -13,11 +13,14 @@ MainWindow {
 
 #player_widget,
 #cpu_widget,
+#about_widget,
+#pos,
 #text {
     background-image: url("data/images/game/papirus_v.png");
     background-repeat: no-repeat;
     background-position: center;
     background-attachment: fixed;
+    /* background-color: transparent; */
 }
 
 #high_scores_table {
@@ -47,3 +50,14 @@ MainWindow {
 /* #high_scores_table {
     background-color: transparent;
 } */
+
+#name {
+    margin: 5, 10, 5, 20;
+    font-family: Arial;
+    font-size: 16px;
+}
+
+#contact:hover {
+    text-decoration: none;
+    color: red
+}
