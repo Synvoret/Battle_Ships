@@ -1,16 +1,3 @@
-
-
-/battle_ships
-# db ignore
-*.db
-
-# in v3.1_GUI databases ignore
-v2.0_GUI_Tkinter/game.db
-# in v3.0_GUI_PyQt6 ignore
-v3.0_GUI_PyQt6/_robocze
-v3.0_GUI_PyQt6/.idea/
-
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -135,10 +135,12 @@ class MainWindow(QMainWindow):
     def start_battle_layout(self):
         
         # Check the completeness of both fleets.
-        if get_value_from_game_statistics('player_ships') != self.level_game('player') or get_value_from_game_statistics('cpu_ships') != self.level_game('cpu'):
+        if get_value_from_game_statistics('player_ships') != self.level_game('player'):
             self.main_info.setText('Fleets not complete.')
             return
         else:
+            if get_value_from_game_statistics('cpu_ships') < self.level_game('cpu'):
+                self.random_fleet('cpu')
             self.action_save_game.setEnabled(True)
             sea_sound.sea_sound_start()
         
