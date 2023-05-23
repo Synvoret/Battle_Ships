@@ -44,7 +44,9 @@ def game_statistics_table_default():
                 cpu_shots INTEGER, 
                 cpu_effective REAL, 
                 shot_zones STRING, 
-                fire_zones STRING)''')
+                fire_zones STRING,
+                music INTEGER,
+                sounds INTEGER)''')
     c.execute('''INSERT INTO game_statistics 
                 (level, 
                 all_ships, 
@@ -64,7 +66,9 @@ def game_statistics_table_default():
                 cpu_shots, 
                 cpu_effective, 
                 shot_zones, 
-                fire_zones) VALUES 
+                fire_zones,
+                music,
+                sounds) VALUES 
                 (   
                     :level, 
                     :all_ships, 
@@ -84,7 +88,9 @@ def game_statistics_table_default():
                     :cpu_shots, 
                     :cpu_effective, 
                     :shot_zones, 
-                    :fire_zones)''', 
+                    :fire_zones,
+                    :music,
+                    :sounds)''', 
                     {
                         'level': 'Normal', 
                         'all_ships': 4,
@@ -104,7 +110,9 @@ def game_statistics_table_default():
                         'cpu_shots': 0,
                         'cpu_effective': 0.0,
                         "shot_zones": '',
-                        "fire_zones": ''
+                        "fire_zones": '',
+                        'music': 1,
+                        'sounds': 1
                         })
     conn.commit()
     conn.close()
@@ -144,18 +152,6 @@ def get_value_from_game_statistics(column: str):
             value = "0 %"
     conn.close()
     return value
-
-def read_all_values_from_game_statistics():
-    conn = sqlite3.connect('data\db\game.db')
-    c = conn.cursor()
-    c.execute("SELECT * FROM game_statistics WHERE id=1")
-    row = c.fetchone()
-    columns = [description[0] for description in c.description]
-    columns.remove('id')
-    result = {}
-    for i in range(len(columns)):
-        result[columns[i]] = row[i + 1]
-    return result
 
 def update_zones(type: str, data: str):
     conn = sqlite3.connect('data\db\game.db')    
@@ -197,14 +193,17 @@ def make_new_boards_table():
                     (zone INTEGER PRIMARY KEY, 
                     player_board STRING,
                     cpu_board STRING)''')
-        for i in range(1, 101):
+        for i in range(0, 100):
             c.execute('''INSERT INTO boards
-                        (player_board,
+                        (zone,
+                        player_board,
                         cpu_board) VALUES
-                        (
+                        (   
+                            :zone,
                             :player_board,
                             :cpu_board)''',
-                            {
+                            {   
+                                'zone': i,
                                 'player_board': 'sea',
                                 'cpu_board': 'sea'
                             })
@@ -213,7 +212,7 @@ def update_boards_table(who: str, types: str, zone: int):
     '''Method that updates the situation on both sides' boards. As arguments it requires:
         - who: which side is update (player, cpu),
         - types: update situation at zone (sea, ship, shot, fire)
-        - zones: choose zone, from 1 to 100.\n
+        - zones: choose zone, from 0 to 99.\n
         For example: update_boards_table('player', 'ship', 10)'''
     with sqlite3.connect('data/db/game.db') as conn:
         c = conn.cursor()
@@ -236,6 +235,7 @@ def get_zone_from_boards(who: str, zone: int):
         c = conn.cursor()
         column = f"{who}_board"
         c.execute(f"SELECT {column} FROM boards WHERE zone=?", (f"{zone}",))
+        # print(zone, who)
         row = c.fetchone()[0]
         pixmap = QPixmap()
         
@@ -262,7 +262,7 @@ def get_board_from_boards(who: str, parent):
     for i in range(10):
         row = []
         for j in range(10):
-            zone_num = i * 10 + j + 1
+            zone_num = i * 10 + j
             zone_icon = get_zone_from_boards(who, zone_num)
             locals()['btn{i}{j}'] = row.append(QPushButton(parent=parent))
             btn = row[int(f"{j}")]
@@ -280,8 +280,8 @@ def checking_zone_brom_board(who: str, zone: int):
         c = conn.cursor()
         column = f"{who}_board"
         c.execute(f"SELECT {column} FROM boards WHERE zone=?", (f"{zone}",))
+        # print(zone, who)
         sit = c.fetchone()[0]
-        # print(sit, zone, who)
         if sit == 'ship':
             update_boards_table(who, 'fire', zone)
             return 'fire'
@@ -304,8 +304,47 @@ def save_game_table_default():
         c = conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS save_games (id INTEGER PRIMARY KEY, name_save STRING, file BLOB)''')
 
+def request_all_values_from_game_statistics_and_boards(option: str):
+    
+    '''
+    Functions responsible for getting data for save and retrieving saved data.\n
+    Depending on the selected 'option' parameter:\n
+    'load' - load game,\n
+    'save' - save game\n
+    '''
+    
+    conn = sqlite3.connect('data\db\game.db')
+    # conn = sqlite3.connect('game.db')
+    c = conn.cursor()
+    
+    datas = {}
+    
+    if option == 'load':
+        
+        print('Do zrobienia, nic jeszcze nie działa')
+    elif option == 'save':
+        
+        # game statistics table
+        c.execute("SELECT * FROM game_statistics WHERE id=1")
+        row = c.fetchone()
+        columns = [description[0] for description in c.description]
+        columns.remove('id')
+        gs = {}
+        for i in range(len(columns)):
+            gs[columns[i]] = row[i + 1]
+        datas['gs'] = gs
+        
+        # boards table
+        c.execute("SELECT * FROM boards")
+        rows = c.fetchall()
+        b = {row[0]: row[1:] for row in rows}
+        datas['b'] = b
+        
+        return datas
+
 def save_file(name: str, data_to_write: dict):
     dane_json = json.dumps(data_to_write)
+    
     # checking name_save
     with sqlite3.connect('data/db/game.db') as conn:
         c = conn.cursor()
@@ -332,6 +371,7 @@ def save_file(name: str, data_to_write: dict):
                     })
 
 def load_file(name_save: str):
+    
     with sqlite3.connect('data\db\game.db') as conn:
         c = conn.cursor()
         c.execute("SELECT file FROM save_games WHERE name_save=?", (name_save, ))
@@ -339,6 +379,7 @@ def load_file(name_save: str):
         if results is None:
             print('nie ma takiego pliku')
         data = json.loads(results[0][0])
+    
     return data
 
 def read_files_list():
@@ -364,19 +405,48 @@ def delete_file(name_save: str):
 def high_scores_table_default():
     with sqlite3.connect('data\db\game.db') as conn:
         c = conn.cursor()
-        c.execute('''CREATE TABLE IF NOT EXISTS high_scores (id INTEGER PRIMARY KEY, player_name TEXT, effective REAL, turns INTEGER, game_time TEXT, date DATE)''')
+        c.execute('''CREATE TABLE IF NOT EXISTS high_scores (id INTEGER PRIMARY KEY, player_name TEXT, effective REAL, turns INTEGER, game_time TEXT, date DATE, scores INTEGER)''')
 
-def add_high_scores(player_name: str, effective: str, turns: int, game_time: str):
+def add_high_scores(winner: str, game_time: str):
+    '''
+    Function is responsible for analyzing data from the battle and determining the final score. \n
+    Scoring ranks the winner in the highscore list or not.
+    '''
     with sqlite3.connect('data\db\game.db') as conn:
+        
+        scores = 0
+        
+        level = get_value_from_game_statistics('level')
+        if level == 'Easy':
+            scores += 100
+        elif level == 'Normal':
+            scores += 200
+        elif level == 'Hard':
+            scores += 300
+        
+        turns = int(get_value_from_game_statistics('turns'))
+        scores -= turns
+        
+        player_name = get_value_from_game_statistics(f"{winner}_name")
+        
+        eff = get_value_from_game_statistics(f"{winner}_effective")
+        eff_result = int(float(eff[:-1]) * 100)
+        scores += eff_result
+        
+        gtime = int(float(game_time[:-4]) * 100)
+        scores -= gtime
+        
         c = conn.cursor()
-        c.execute("INSERT INTO high_scores (player_name, effective, turns, game_time, date) VALUES (:player_name, :effective, :turns, :game_time, :date)", 
+        c.execute("INSERT INTO high_scores (player_name, effective, turns, game_time, date, scores) VALUES (:player_name, :effective, :turns, :game_time, :date, :scores)", 
                     {
-                        'player_name': f"{player_name}", 
-                        'effective': f"{effective}",
-                        'turns': f"{turns}", 
-                        'game_time': f"{game_time}", 
+                        'player_name': player_name, 
+                        'effective': eff,
+                        'turns': turns, 
+                        'game_time': game_time, 
                         'date': datetime.date.today(),
+                        'scores': scores
                     })
+        # c.execute("SELECT * FROM high_scores ORDER BY scores DESC")
 
 def labels():
     with sqlite3.connect('data\db\game.db') as conn:
@@ -388,7 +458,7 @@ def labels():
 def read_high_scores():
     with sqlite3.connect('data\db\game.db') as conn:
         c = conn.cursor()
-        c.execute("SELECT * FROM high_scores")
+        c.execute("SELECT player_name, effective, turns, game_time, date, scores FROM high_scores ORDER BY scores DESC")
         column_names = [description[0].replace('_', ' ').title() for description in c.description]
         rows = []
         for row in c.fetchall():
@@ -402,3 +472,7 @@ def reset_high_scores():
     with sqlite3.connect('data\db\game.db') as conn:
         c = conn.cursor()
         c.execute("DELETE FROM high_scores")
+
+# if __name__ == '__main__':
+    # request_all_values_from_game_statistics_and_boards('save')
+    # load_file('Duzy')

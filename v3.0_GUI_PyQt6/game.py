@@ -5,12 +5,12 @@ from data.db.db import *
 from data.app.layouts import *
 from data.sounds.sounds import *
 
-from PyQt6.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QGridLayout, QLabel, QGraphicsScene, QGraphicsView, QPushButton, QSizePolicy, QHBoxLayout, QMenuBar, QMenu, QSpinBox, QLineEdit, QStackedWidget, QStackedLayout, QInputDialog, QMessageBox, QTableWidget, QTableWidgetItem, QLayout, QBoxLayout, QGroupBox, QStyle, QTextEdit, QFileDialog, QSpacerItem
+from PyQt6.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QGridLayout, QLabel, QGraphicsScene, QGraphicsView, QPushButton, QSizePolicy, QHBoxLayout, QMenuBar, QMenu, QSpinBox, QLineEdit, QStackedWidget, QStackedLayout, QInputDialog, QMessageBox, QTableWidget, QTableWidgetItem, QLayout, QBoxLayout, QGroupBox, QStyle, QTextEdit, QFileDialog, QSpacerItem, QCheckBox, QSlider, QRadioButton, QScrollBar
 from PyQt6.QtGui import QPixmap, QIcon, QImage, QBrush, QFont, QPainter, QAction, QCursor, QPalette, QColor, QTextCursor, QGuiApplication
-from PyQt6.QtCore import QSize, Qt, QRectF, QTimer, QFileInfo, QBuffer, QCoreApplication, QUrlQuery, QRect, QThread
+from PyQt6.QtCore import QSize, Qt, QRectF, QTimer, QFileInfo, QBuffer, QCoreApplication, QUrlQuery, QRect, QThread, QSettings
 from PyQt6.QtSql import QSqlDatabase, QSqlQuery
 from PyQt6 import QtCore, QtGui
-from PyQt6.QtCore import QUrl, QMargins
+from PyQt6.QtCore import QUrl, QMargins, Qt
 from PyQt6.QtMultimedia import QSoundEffect, QMediaPlayer, QAudioOutput
 
 
@@ -55,11 +55,12 @@ class MainWindow(QMainWindow):
         self.action_settings = QAction("Settings", self)
         self.action_settings.setObjectName("settings")
         self.action_settings.setIcon(QIcon(r"data\images\main\settings.png"))
-        # self.action_settings.triggered.connect()
+        self.action_settings.triggered.connect(self.settings_layout)
         self.action_high_scores = QAction("High Scores", self)
         self.action_high_scores.setObjectName('high_scores')
         self.action_high_scores.setIcon(QIcon(r"data/images/main/top10.png"))
-        # self.action_high_scores.triggered.connect(lambda: [self.fill_out_highscore_table(), self.switch_layouts("High Scores")])        
+        # self.action_high_scores.triggered.connect(lambda: [self.fill_out_highscore_table(), self.highscores_layout()])
+        self.action_high_scores.triggered.connect(lambda: self.highscores_layout())
         self.action_exit = QAction("Exit", self) # making element of action
         self.action_exit.setObjectName('action_exit')
         self.action_exit.setIcon(QIcon(r"data/images/main/exit.png"))
@@ -96,7 +97,7 @@ class MainWindow(QMainWindow):
         self.main_widget = QWidget()
         self.main_widget.setMaximumSize(200, 300)
         self.main_layout = QVBoxLayout()
-        main_menu_buttons_list = [
+        self.main_menu_buttons_list = [
             QPushButton("Start Battle", clicked=lambda: self.start_battle_layout()),
             QPushButton("Player Fleet", clicked=lambda: self.player_fleet_layout()),
             QPushButton("Random Fleets", clicked=lambda: [self.random_fleet('player'), self.random_fleet('cpu')]),
@@ -104,7 +105,7 @@ class MainWindow(QMainWindow):
             QPushButton("Reset Game", clicked=self.reset_game),
             QPushButton("Quit Game", clicked=self.close)
         ]
-        for btn in main_menu_buttons_list:
+        for btn in self.main_menu_buttons_list:
             self.buttons(btn)
             self.main_layout.addWidget(btn, 0, QtCore.Qt.AlignmentFlag.AlignHCenter|QtCore.Qt.AlignmentFlag.AlignVCenter)
         self.main_info = QLabel("Battle Ships v3.0 2023\u00AE")
@@ -120,7 +121,6 @@ class MainWindow(QMainWindow):
         self.stacked_layout.addWidget(self.a)
         
         
-        
         # ustawianie QStackedLayout jako główny layout okna
         self.setCentralWidget(self.central_widget)
         # self.centralWidget().setLayout(self.stacked_layout)
@@ -128,21 +128,33 @@ class MainWindow(QMainWindow):
     
     # LAYOUTS methods
     def main_menu_layout(self):
+        
         sea_sound.sea_sound_stop()
         self.action_save_game.setEnabled(False)
+        self.action_load_game.setEnabled(True)
+        if get_value_from_game_statistics('turns') != 0:
+            self.main_menu_buttons_list[0].setText('Continue Battle')
+            self.main_menu_buttons_list[1].setEnabled(False)
+            self.main_menu_buttons_list[2].setEnabled(False)
+            self.main_menu_buttons_list[3].setEnabled(False)
         self.stacked_layout.setCurrentWidget(self.a)
     
     def start_battle_layout(self):
         
         # Check the completeness of both fleets.
-        if get_value_from_game_statistics('player_ships') != self.level_game('player'):
-            self.main_info.setText('Fleets not complete.')
-            return
-        else:
-            if get_value_from_game_statistics('cpu_ships') < self.level_game('cpu'):
-                self.random_fleet('cpu')
+            
+        if get_value_from_game_statistics('turns') == 0:
+            if get_value_from_game_statistics('player_ships') != self.level_game('player'):
+                self.main_info.setText('Fleets not complete.')
+                return
+            self.random_fleet('cpu')
             self.action_save_game.setEnabled(True)
-            sea_sound.sea_sound_start()
+            self.action_load_game.setEnabled(False)
+            self.music_and_sounds('sound', 'sea_start')
+        elif get_value_from_game_statistics('turns') != 0:
+            self.action_save_game.setEnabled(True)
+            self.action_load_game.setEnabled(False)
+            self.music_and_sounds('sound', 'sea_start')
         
         # PLAYER widget
         player_widget = QWidget(self.central_widget)
@@ -209,9 +221,9 @@ class MainWindow(QMainWindow):
         cpu_board_layout =  QGridLayout()
         cpu_board_layout.setSpacing(0)
         self.cpu_board = self.sea_zone('cpu', cpu_board_layout)
-        for i in range(0, len(self.cpu_board)):
+        for i in range(0, 100):
             try:
-                self.cpu_board[i].clicked.disconnect()
+                self.cpu_board[i].disconnect()
             except TypeError:
                 pass
             self.cpu_board[i].clicked.connect(lambda checked, button=self.cpu_board[i]: [self.shot('player', self.cpu_board.index(button), button, True)])
@@ -275,11 +287,29 @@ class MainWindow(QMainWindow):
         self.start_time_game = time.time()
         
         # who start battle?
-        sides = [self.player_turn, self.cpu_turn]
-        start = random.choice(sides)
-        start()
+        if get_value_from_game_statistics('turns') == 0:
+            sides = [self.player_turn, self.cpu_turn]
+            start = random.choice(sides)
+            start()
+        else:
+            self.player_turn()
     
     def player_fleet_layout(self):
+        
+        if get_value_from_game_statistics('turns') != 0:
+            self.main_info.setText('You cannot change your fleet \n during the battle!')
+            return
+        
+        def enabled_check():
+            if get_value_from_game_statistics('player_ships') == self.level_game('player'):
+                self.ready_to_battle.setEnabled(True)
+            else:
+                self.ready_to_battle.setEnabled(False)
+            if get_value_from_game_statistics('player_ships') != 0:
+                self.clear_board.setEnabled(True)
+            else:
+                self.clear_board.setEnabled(False)
+        
         # PLAYER widget
         player_widget = QWidget(self.central_widget)
         player_widget.setObjectName('player_widget')
@@ -307,30 +337,32 @@ class MainWindow(QMainWindow):
         for i in range(0, len(player_board)):
             # player_board[i].setEnabled(True)
             try:
-                player_board[i].clicked.disconnect()
+                player_board[i].disconnect()
             except TypeError:
                 pass
-            player_board[i].clicked.connect(lambda zone=player_board[i], index=i, amount=4: [self.ship('player', index, True, amount), amount_ships.setText(f"Ships: {get_value_from_game_statistics('player_ships')}")])
-        
-        
-        
+            player_board[i].clicked.connect(lambda zone=player_board[i], index=i, amount=4: [self.ship('player', index, True, amount), amount_ships.setText(f"Ships: {get_value_from_game_statistics('player_ships')}"), enabled_check()])
         
         # NAV
         nav_widget = QWidget(self.central_widget)
         nav_widget.setMaximumSize(200, 300)
         widget = QWidget(nav_widget)
         nav_layout = QVBoxLayout(widget)
-        clear_player_board = QPushButton('Clear Player Board', clicked=lambda: [self.clear_player_board(), amount_ships.setText(f"Ships: {get_value_from_game_statistics('player_ships')}")])
-        back_button = QPushButton('<- Back', clicked=self.main_menu_layout)
-        self.buttons(clear_player_board)
+        self.ready_to_battle = QPushButton("Ready to Battle!", clicked=lambda: self.start_battle_layout())
+        self.ready_to_battle.setEnabled(False)
+        self.clear_board = QPushButton('Clear Player Board', clicked=lambda: [self.clear_player_board(), amount_ships.setText(f"Ships: {get_value_from_game_statistics('player_ships')}")])
+        self.clear_board.setEnabled(False)
+        back_button = QPushButton('<- Back to Menu', clicked=self.main_menu_layout)
+        self.buttons(self.ready_to_battle)
+        self.buttons(self.clear_board)
         self.buttons(back_button)
         spacer = QSpacerItem(20, 400, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding)
         nav_layout.addItem(spacer)
-        nav_layout.addWidget(clear_player_board)
+        enabled_check()
+        nav_layout.addWidget(self.ready_to_battle)
+        nav_layout.addWidget(self.clear_board)
         nav_layout.addWidget(back_button)
         nav_widget.setLayout(nav_layout)
         nav_layout.setSpacing(0)
-        
         
         # dodawanie layoutów i widgetów do player_fleet_layout
         player_widget_layout.addLayout(player_board_layout)
@@ -343,7 +375,6 @@ class MainWindow(QMainWindow):
         main_layout = QHBoxLayout(c)
         main_layout.addWidget(player_widget)
         main_layout.addWidget(nav_widget)
-        
         
         # dodawanie drugiego widgeta do QStackedLayout
         self.stacked_layout.addWidget(c)
@@ -366,11 +397,11 @@ class MainWindow(QMainWindow):
                 new_line.returnPressed.connect(lambda: update_game_statistics_table('player_name', new_line.text()))
                 new_line.show()
                 main_menu_buttons_list[1].setText("Ok")
-                main_menu_buttons_list[1].clicked.disconnect()
+                main_menu_buttons_list[1].disconnect()
                 main_menu_buttons_list[1].clicked.connect(lambda: update_game_statistics_table('player_name', new_line.text()))
                 main_menu_buttons_list[2].setText("")
-                main_menu_buttons_list[4].setText("<- Back")
-                main_menu_buttons_list[4].clicked.disconnect()
+                main_menu_buttons_list[4].setText("<- Back to Setup")
+                main_menu_buttons_list[4].disconnect()
                 main_menu_buttons_list[4].clicked.connect(self.setup_game_layout)
             
             if button.text() == "Max. Ships":
@@ -385,29 +416,29 @@ class MainWindow(QMainWindow):
                 new_line.setFont(QFont("Arial", 10))
                 new_line.show()
                 main_menu_buttons_list[0].setText("")
-                main_menu_buttons_list[0].clicked.disconnect()
+                main_menu_buttons_list[0].disconnect()
                 main_menu_buttons_list[2].setText("Ok")
-                main_menu_buttons_list[2].clicked.disconnect()
+                main_menu_buttons_list[2].disconnect()
                 main_menu_buttons_list[2].clicked.connect(lambda: update_game_statistics_table('all_ships', new_line.value()))
-                main_menu_buttons_list[4].setText("<- Back")
-                main_menu_buttons_list[4].clicked.disconnect()
+                main_menu_buttons_list[4].setText("<- Back to Setup")
+                main_menu_buttons_list[4].disconnect()
                 main_menu_buttons_list[4].clicked.connect(self.setup_game_layout)
             
             if button.text() == "Level":
                 main_menu_buttons_list[0].setText("")
-                main_menu_buttons_list[0].clicked.disconnect()
+                main_menu_buttons_list[0].disconnect()
                 main_menu_buttons_list[1].setText("Easy")
-                main_menu_buttons_list[1].clicked.disconnect()
+                main_menu_buttons_list[1].disconnect()
                 main_menu_buttons_list[1].clicked.connect(lambda: update_game_statistics_table('level', "Easy"))
                 main_menu_buttons_list[2].setText("Normal")
-                main_menu_buttons_list[2].clicked.disconnect()
+                main_menu_buttons_list[2].disconnect()
                 main_menu_buttons_list[2].clicked.connect(lambda: update_game_statistics_table('level', "Normal"))
                 main_menu_buttons_list[3].setEnabled(True)
                 main_menu_buttons_list[3].setText("Hard")
-                main_menu_buttons_list[3].clicked.disconnect()
+                main_menu_buttons_list[3].disconnect()
                 main_menu_buttons_list[3].clicked.connect(lambda: update_game_statistics_table('level', 'Hard'))
-                main_menu_buttons_list[4].setText("<- Back")
-                main_menu_buttons_list[4].clicked.disconnect()
+                main_menu_buttons_list[4].setText("<- Back to Setup")
+                main_menu_buttons_list[4].disconnect()
                 main_menu_buttons_list[4].clicked.connect(self.setup_game_layout)
         
         # tworzenie głównego widgeta
@@ -487,11 +518,16 @@ class MainWindow(QMainWindow):
         nav_widget.setMaximumSize(200, 300)
         widget = QWidget(nav_widget)
         nav_layout = QVBoxLayout(widget)
-        back_button = QPushButton('<- Back', clicked=self.main_menu_layout)
-        self.buttons(back_button)
+        back_game_button = QPushButton('<- Back to Game', clicked=self.start_battle_layout)
+        if get_value_from_game_statistics('player_ships') == 0:
+            back_game_button.setEnabled(False)
+        back_menu_button = QPushButton('<- Back to Menu', clicked=self.main_menu_layout)
+        self.buttons(back_menu_button)
+        self.buttons(back_game_button)
         spacer = QSpacerItem(20, 400, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding)
         nav_layout.addItem(spacer)
-        nav_layout.addWidget(back_button)
+        nav_layout.addWidget(back_game_button)
+        nav_layout.addWidget(back_menu_button)
         nav_widget.setLayout(nav_layout)
         nav_layout.setSpacing(0)
         
@@ -582,11 +618,16 @@ class MainWindow(QMainWindow):
         nav_widget.setMaximumSize(200, 300)
         widget = QWidget(nav_widget)
         nav_layout = QVBoxLayout(widget)
-        back_button = QPushButton('<- Back', clicked=self.main_menu_layout)
-        self.buttons(back_button)
+        back_game_button = QPushButton('<- Back to Game', clicked=self.start_battle_layout)
+        if get_value_from_game_statistics('player_ships') == 0:
+            back_game_button.setEnabled(False)
+        back_menu_button = QPushButton('<- Back to Menu', clicked=self.main_menu_layout)
+        self.buttons(back_game_button)
+        self.buttons(back_menu_button)
         spacer = QSpacerItem(20, 400, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding)
         nav_layout.addItem(spacer)
-        nav_layout.addWidget(back_button)
+        nav_layout.addWidget(back_game_button)
+        nav_layout.addWidget(back_menu_button)
         nav_widget.setLayout(nav_layout)
         nav_layout.setSpacing(0)
         
@@ -620,9 +661,11 @@ class MainWindow(QMainWindow):
             
             def load_game(name):
                 loaded_data: dict = load_file(name)
-                for data in loaded_data.items():
+                for data in loaded_data['gs'].items():
                     update_game_statistics_table(data[0], data[1])
-                    print(data)
+                for data in loaded_data['b'].items():
+                    update_boards_table('player', data[1][0], data[0])
+                    update_boards_table('cpu', data[1][1], data[0])
             
             for but in save_positions:
                 try:
@@ -630,7 +673,8 @@ class MainWindow(QMainWindow):
                         load_game(but.text())
                 except IndexError:
                     pass
-            print('ładuje plik i statystyki')
+                
+            self.start_battle_layout()
         
         def delete_save(buttons=save_positions):
             for but in buttons:
@@ -668,7 +712,7 @@ class MainWindow(QMainWindow):
         nav_layout = QVBoxLayout(widget)
         load_button = QPushButton('Load Game', clicked=load_with_icon)
         delete_button = QPushButton('Dalete Save', clicked=lambda: [self.delete_accept(delete_save, 'DELETE save?!', 'Are you sure You want to DELETE save?? '), self.load_game_layout()])
-        back_button = QPushButton('<- Back', clicked=self.main_menu_layout)
+        back_button = QPushButton('<- Back to Menu', clicked=self.main_menu_layout)
         self.buttons(load_button)
         self.buttons(delete_button)
         self.buttons(back_button)
@@ -697,7 +741,6 @@ class MainWindow(QMainWindow):
         
         def set_icon(button, buttons=d):
             if not button:
-                print('mam false')
                 for btn in buttons:
                     if isinstance(buttons[btn], QPushButton):
                         if buttons[btn] != button and buttons[btn].icon():
@@ -714,12 +757,13 @@ class MainWindow(QMainWindow):
                         buttons[btn].setIcon(QIcon())
         
         def save_with_icon(name):
-            datas_to_save = read_all_values_from_game_statistics()
+            datas_to_save = request_all_values_from_game_statistics_and_boards('save')
         
             if len(read_files_list()) > 10:
                 return
             
             save_name = name.text()
+            # save_name = name.text()
             
             if len(save_name) == 0:
                 return
@@ -748,11 +792,11 @@ class MainWindow(QMainWindow):
         
         save_widget_layout = QVBoxLayout(save_widget)
         
-        for i in range(10):
+        for i in range(len(loads)):
             if i < len(loads):
                 d[i] = QPushButton(loads[i][0])
-            else:
-                d[i] = QLineEdit()
+        
+        d[len(loads)] = QLineEdit()
         
         for i in range(len(list(d.values()))):
             line = QHBoxLayout()
@@ -761,14 +805,19 @@ class MainWindow(QMainWindow):
             widget.setFont(QFont('Arial', 12))
             widget.setMaximumSize(300, 30)
             if isinstance(widget, QPushButton):
-                widget.setText(widget.text())
-                widget.clicked.connect(lambda _, b=widget: set_icon(b))
+                widget_button = widget
+                widget_button.setText(widget.text())
+                widget_button.clicked.connect(lambda _, b=widget_button: set_icon(b))
             elif isinstance(widget, QLineEdit):
-                widget.clearFocus()
-                widget.setPlaceholderText('Empty')
-                widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                widget.returnPressed.connect(lambda text=widget: save_with_icon(text))
-                widget.cursorPositionChanged.connect(lambda: set_icon(False))
+                widget_lineedit = widget
+                widget_lineedit.clearFocus()
+                widget_lineedit.setPlaceholderText('-- empty slot --')
+                widget_lineedit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                widget_lineedit.returnPressed.connect(lambda text=widget_lineedit: save_with_icon(text))
+                widget_lineedit.installEventFilter(self)
+                widget_lineedit.editingFinished.connect(lambda: print('mam tę linię'))
+                widget_lineedit.cursorPositionChanged.connect(lambda: set_icon(False))
+                # line.addWidget(widget_lineedit)
             line.addWidget(widget)
             save_widget_layout.addLayout(line)
         spacerItem = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
@@ -777,11 +826,13 @@ class MainWindow(QMainWindow):
         # nav
         nav_widget = QWidget(self.central_widget)
         nav_widget.setMaximumSize(200, 300)
-        widget = QWidget(nav_widget)
+        new_widget = QWidget(nav_widget)
         nav_layout = QVBoxLayout(widget)
-        save_button = QPushButton('Save Game', clicked=lambda text=widget: save_with_icon(text))
+        ########################## TODO (doesn't save game after click button 'save_button')
+        # save_button = QPushButton('Save Game', clicked=lambda text=widget_lineedit.text(): save_with_icon(text))
+        save_button = QPushButton('Save Game', clicked=lambda: print(widget_lineedit.text()))
+        ##########################
         delete_button = QPushButton('Dalete Save', clicked=lambda: [self.delete_accept(delete_save, 'DELETE save?!', 'Are you sure You want to DELETE save?? '), self.save_game_layout()])
-        # back_button = QPushButton('<- Back to Game', clicked=self.main_menu_layout)
         back_button = QPushButton('<- Back to Game', clicked=self.start_battle_layout)
         self.buttons(save_button)
         self.buttons(delete_button)
@@ -801,7 +852,198 @@ class MainWindow(QMainWindow):
         self.stacked_layout.addWidget(h)
         self.stacked_layout.setCurrentWidget(h)
     
+    def settings_layout(self):
+        
+        # SETTINGS widget
+        settings_widget = QWidget(self.central_widget)
+        settings_widget.setObjectName('settings_widget')
+        settings_widget.setContentsMargins(40, 50, 40, 30)
+        settings_widget.setMaximumSize(350, 600)
+        
+        self.widget = QWidget(settings_widget)
+        
+        settings_widget_layout = QVBoxLayout(settings_widget)
+        
+        # spacer = QSpacerItem(20, 400, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding)
+        # settings_widget_layout.addItem(spacer)
+        
+        settings_label = QLabel("Settings")
+        settings_label.setFont(QFont('Arial', 12))
+        settings_widget_layout.addWidget(settings_label, 0, Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
+        
+        # line = QHBoxLayout()
+        # spacerItem = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        # line.addItem(spacerItem)
+        # settings_widget_layout.addLayout(line)
+        
+        # player name
+        line = QHBoxLayout()
+        name = get_value_from_game_statistics('player_name')
+        player_name = QLineEdit(name)
+        player_name.setPlaceholderText("Your Name...")
+        player_name.setMaxLength(10)
+        player_name.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        player_name.setMaxLength(16)        
+        player_name.returnPressed.connect(lambda: update_game_statistics_table('player_name', player_name.text()))
+        # player_name.setFixedSize(130, 30)
+        mplayer_name_label = (QLabel('Player Name'))
+        line.addWidget(player_name, 0, Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
+        line.addWidget(mplayer_name_label, 0, Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
+        settings_widget_layout.addLayout(line)
+        
+        # on/off sounds
+        line = QHBoxLayout()
+        sounds_fx = QCheckBox()
+        sounds_fx.setChecked(bool(get_value_from_game_statistics('sounds')))
+        sounds_fx_label = (QLabel('Sounds'))
+        sounds_fx.stateChanged.connect(lambda: self.music_and_sounds(sound='sound', action='sea_stop', stan=int(sounds_fx.isChecked())))
+        line.addWidget(sounds_fx, 0, Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
+        line.addWidget(sounds_fx_label, 0, Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
+        settings_widget_layout.addLayout(line)
+        
+        # on/off music
+        line = QHBoxLayout()
+        music_fx = QCheckBox()
+        music_fx.setChecked(bool(get_value_from_game_statistics('music')))
+        music_fx_label = (QLabel('Music'))
+        music_fx.stateChanged.connect(lambda: self.music_and_sounds('music', stan=int(music_fx.isChecked())))
+        line.addWidget(music_fx, 0, Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
+        line.addWidget(music_fx_label, 0, Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
+        settings_widget_layout.addLayout(line)
+        
+        # amount ships
+        line = QHBoxLayout()
+        actual_max_ships = get_value_from_game_statistics('all_ships')
+        ships = QScrollBar(Qt.Orientation.Horizontal)
+        # ships = QSlider(Qt.Orientation.Horizontal)
+        ships.setFixedSize(130, 20)
+        ships.setMinimum(1)
+        ships.setMaximum(10)
+        ships.setValue(actual_max_ships)
+        ships.setSingleStep(1)
+        ships_label = QLabel(f"Ships: {actual_max_ships}")
+        ships.valueChanged.connect(lambda: [ships_label.setText("Ships: {}".format(ships.value())), update_game_statistics_table('all_ships', ships.value())])
+        line.addWidget(ships, 0, Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
+        line.addWidget(ships_label, 0, QtCore.Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
+        settings_widget_layout.addLayout(line)
+        
+        # level
+        line = QHBoxLayout()
+        levels = QVBoxLayout()
+        level_e = QRadioButton("Easy")
+        level_n = QRadioButton("Normal")
+        level_h = QRadioButton("Hard")
+        if get_value_from_game_statistics('level') == 'Easy':
+            level_e.setChecked(True)
+        elif get_value_from_game_statistics('level') == 'Normal':
+            level_n.setChecked(True)
+        elif get_value_from_game_statistics('level') == 'Hard':
+            level_h.setChecked(True)
+        level_e.toggled.connect(lambda stan=level_e.isChecked(): update_game_statistics_table('level', 'Easy') if stan else False)
+        level_n.toggled.connect(lambda stan=level_n.isChecked(): update_game_statistics_table('level', 'Normal') if stan else False)
+        level_h.toggled.connect(lambda stan=level_h.isChecked(): update_game_statistics_table('level', 'Hard') if stan else False)
+        level_label = QLabel("Level")
+        levels.addWidget(level_e, 0, Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
+        levels.addWidget(level_n, 0, Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
+        levels.addWidget(level_h, 0, Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
+        line.addLayout(levels)
+        line.addWidget(level_label, 0, QtCore.Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignCenter)
+        settings_widget_layout.addLayout(line)
+        
+        line = QHBoxLayout()
+        spacerItem = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        line.addItem(spacerItem)
+        settings_widget_layout.addLayout(line)
+        
+        # nav
+        nav_widget = QWidget(self.central_widget)
+        nav_widget.setMaximumSize(200, 300)
+        widget = QWidget(nav_widget)
+        nav_layout = QVBoxLayout(widget)
+        back_game_button = QPushButton('<- Back to Game', clicked=self.start_battle_layout)
+        if get_value_from_game_statistics('player_ships') == 0:
+            back_game_button.setEnabled(False)
+        back_button = QPushButton('<- Back to Menu', clicked=self.main_menu_layout)
+        self.buttons(back_game_button)
+        self.buttons(back_button)
+        spacer = QSpacerItem(20, 400, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding)
+        nav_layout.addItem(spacer)        
+        nav_layout.addWidget(back_game_button)
+        nav_layout.addWidget(back_button)
+        nav_widget.setLayout(nav_layout)
+        nav_layout.setSpacing(0)
+        
+        k = QWidget()
+        main_layout = QHBoxLayout(k)
+        main_layout.addWidget(settings_widget)
+        main_layout.addWidget(nav_widget)
+        # dodawanie głównego widgeta do QStackedLayout
+        self.stacked_layout.addWidget(k)
+        self.stacked_layout.setCurrentWidget(k)
     
+    def highscores_layout(self):
+        # RULES widget
+        highscore_widget = QWidget(self.central_widget)
+        highscore_widget.setObjectName('highscore_widget')
+        highscore_widget.setMaximumSize(642, 344)
+        
+        self.widget = QWidget(highscore_widget)
+        
+        highscore_widget_layout = QVBoxLayout(highscore_widget)
+        size_policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        highscore_widget.setSizePolicy(size_policy)
+        
+        highscore_table = QTableWidget()
+        highscore_table.setSizePolicy(size_policy)
+        datas = read_high_scores()
+        highscore_table.setRowCount(10)
+        # highscore_table.verticalHeader().setVisible(False)
+        highscore_table.setColumnCount(6)
+        highscore_table.setHorizontalHeaderLabels(["Name", "Effective", "Turns", "Game Time", "Date", "SCORES"])
+        # highscore_table.setSortingEnabled(True)
+        
+        for row, data in enumerate(datas):
+            for column, value in enumerate(data.values()):
+                item = QTableWidgetItem(str(value))
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                highscore_table.setItem(row, column, item)
+        
+        # palette = highscore_table.palette()
+        # palette.setColor(QPalette.ColorRole.Base, QColor('yellow'))
+        # highscore_table.setPalette(palette)
+        
+        highscore_widget_layout.addWidget(highscore_table)
+        # highscore_widget_layout.setStretchFactor(highscore_table, 1)
+        
+        # nav
+        nav_widget = QWidget(self.central_widget)
+        nav_widget.setMaximumSize(200, 300)
+        widget = QWidget(nav_widget)
+        nav_layout = QVBoxLayout(widget)
+        delete_button = QPushButton('Delete Highscores', clicked=lambda: [self.delete_accept(reset_high_scores, 'DELETE highscores?!', 'Are you sure You want to DELETE all Highscores??'), self.highscores_layout()])
+        back_game_button = QPushButton('<- Back to Game', clicked=self.start_battle_layout)
+        if get_value_from_game_statistics('player_ships') == 0:
+            back_game_button.setEnabled(False)
+        back_menu_button = QPushButton('<- Back to Menu', clicked=self.main_menu_layout)
+        self.buttons(delete_button)
+        self.buttons(back_game_button)
+        self.buttons(back_menu_button)
+        spacer = QSpacerItem(20, 400, QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding)
+        nav_layout.addItem(spacer)
+        nav_layout.addWidget(delete_button)
+        nav_layout.addWidget(back_game_button)
+        nav_layout.addWidget(back_menu_button)
+        nav_widget.setLayout(nav_layout)
+        nav_layout.setSpacing(0)
+        
+        
+        j = QWidget()
+        main_layout = QHBoxLayout(j)
+        main_layout.addWidget(highscore_widget)
+        main_layout.addWidget(nav_widget)
+        # dodawanie głównego widgeta do QStackedLayout
+        self.stacked_layout.addWidget(j)
+        self.stacked_layout.setCurrentWidget(j)
     
     
     
@@ -822,21 +1064,12 @@ class MainWindow(QMainWindow):
         self.cpu_statistic_5.setText(f"Missed Shots: {get_value_from_game_statistics('cpu_missed')}")
         self.cpu_statistic_6.setText(f"Effective: {get_value_from_game_statistics('cpu_effective')}")
     
-    def fill_out_highscore_table(self):
-        datas = read_high_scores()
-        self.high_scores_table.setRowCount(len(datas))
-        self.high_scores_table.setSortingEnabled(True)
-        for row, data in enumerate(datas):
-            for column, value in enumerate(data.values()):
-                item = QTableWidgetItem(str(value))
-                self.high_scores_table.setItem(row, column, item)
-    
     def buttons(self, button):
         button.setObjectName('button')
         button.setFixedSize(130, 30)
         button.setFont(QFont("Arial", 10))
         button.enterEvent = lambda event, btn=button: btn.setFont(QFont("Arial", 10, italic=True))
-        button.leaveEvent = lambda event, btn=button: btn.setFont(QFont("Arial", 9))
+        button.leaveEvent = lambda event, btn=button: btn.setFont(QFont("Arial", 10))
         if button.text() == '':
             button.setEnabled(False)
     
@@ -872,10 +1105,10 @@ class MainWindow(QMainWindow):
     def cpu_turn(self):
         cpu_avaiable_shots = ceil(get_value_from_game_statistics('cpu_ships') * 0.5)
         update_game_statistics_table('cpu_available_shots', cpu_avaiable_shots)
-        i = 0 # zliczanie oddanych strzałów
-        i_max = get_value_from_game_statistics('cpu_available_shots') # maksymalna ilość strzałów w turze
+        i = 0
+        i_max = get_value_from_game_statistics('cpu_available_shots')
         while i < i_max:
-            random_zone = random.randint(1, 101) # losuję strefę w która strzela
+            random_zone = random.randint(0, 99)
             if str(random_zone) in get_zones('shot') or str(random_zone) in get_zones('fire'):
                 continue
             update_zones('shot', random_zone)
@@ -888,56 +1121,55 @@ class MainWindow(QMainWindow):
         '''Method validates the selected zone depending on the situation. The main assumptions are: the ship cannot stand next to the ship. Return 'bool'.'''
         
         # cases of zones
-        top_left_corner = (1, 10, 11)  # if zone 1
-        top_side = (-1, 1, 9, 10, 11 ) # if zones from 2 to 9 every 1
-        top_right_corner = (-1, 9, 10)  # if zone 10
-        right_side = (-11, -10, -1, 9, 10)  # if zones from 20 to 90 every 10
-        bottom_right_corner = (-11, -10, -1 ) # if zone 100
-        bottom_side = (-11, -10, -9, -1, 1)  # if zones from 92 to 99 every 1
-        bottom_left_corner = (-10, -9, 1)  # if zone 91
-        left_side = (-10, -9, 1, 10, 11)  # if zones from 11 to 81 every 10
+        top_left_corner = (1, 10, 11)  # if zone 0
+        top_side = (-1, 1, 9, 10, 11 ) # if zones from 1 to 8 every 1
+        top_right_corner = (-1, 9, 10)  # if zone 9
+        right_side = (-11, -10, -1, 9, 10)  # if zones from 19 to 89 every 10
+        bottom_right_corner = (-11, -10, -1 ) # if zone 99
+        bottom_side = (-11, -10, -9, -1, 1)  # if zones from 91 to 98 every 1
+        bottom_left_corner = (-10, -9, 1)  # if zone 90
+        left_side = (-10, -9, 1, 10, 11)  # if zones from 10 to 80 every 10
         inside = (-11, -10, -9, -1, 1, 9, 10, 11)  # if rest of cases
         ship_image = QPixmap('data\images\game\ship1.png').scaled(QSize(30, 30))
-        checking_zone += 1
         
         # in SENDING ships (move = 'ship')
-        if checking_zone == 1:
+        if checking_zone == 0:
             for i in top_left_corner:
                 if get_zone_from_boards(who, checking_zone + i).pixmap(get_zone_from_boards(who, checking_zone + i).availableSizes()[0]).toImage() == ship_image.toImage():
                     # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
                     # self.action.setText('Too close another Ship!')
                     return False
-        elif checking_zone in tuple(range(2, 10)):
+        elif checking_zone in tuple(range(1, 9)):
             for i in top_side:
                 if get_zone_from_boards(who, checking_zone + i).pixmap(get_zone_from_boards(who, checking_zone + i).availableSizes()[0]).toImage() == ship_image.toImage():
                     # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
                     return False
-        elif checking_zone == 10:
+        elif checking_zone == 9:
             for i in top_right_corner:
                 if get_zone_from_boards(who, checking_zone + i).pixmap(get_zone_from_boards(who, checking_zone + i).availableSizes()[0]).toImage() == ship_image.toImage():
                     # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
                     return False
-        elif checking_zone in tuple(range(20, 91, 10)):
+        elif checking_zone in tuple(range(19, 90, 10)):
             for i in right_side:
                 if get_zone_from_boards(who, checking_zone + i).pixmap(get_zone_from_boards(who, checking_zone + i).availableSizes()[0]).toImage() == ship_image.toImage():
                     # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
                     return False
-        elif checking_zone == 100:
+        elif checking_zone == 99:
             for i in bottom_right_corner:
                 if get_zone_from_boards(who, checking_zone + i).pixmap(get_zone_from_boards(who, checking_zone + i).availableSizes()[0]).toImage() == ship_image.toImage():
                     # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
                     return False
-        elif checking_zone in tuple(range(92, 100)):
+        elif checking_zone in tuple(range(91, 99)):
             for i in bottom_side:
                 if get_zone_from_boards(who, checking_zone + i).pixmap(get_zone_from_boards(who, checking_zone + i).availableSizes()[0]).toImage() == ship_image.toImage():
                     # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
                     return False
-        elif checking_zone == 91:
+        elif checking_zone == 90:
             for i in bottom_left_corner:
                 if get_zone_from_boards(who, checking_zone + i).pixmap(get_zone_from_boards(who, checking_zone + i).availableSizes()[0]).toImage() == ship_image.toImage():
                     # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
                     return False
-        elif checking_zone in tuple(range(11, 82, 10)):
+        elif checking_zone in tuple(range(10, 90,  10)):
             for i in left_side:
                 if get_zone_from_boards(who, checking_zone + i).pixmap(get_zone_from_boards(who, checking_zone + i).availableSizes()[0]).toImage() == ship_image.toImage():
                     # print(f'{checking_zone} Too close ship in {checking_zone + i} zone')
@@ -949,9 +1181,9 @@ class MainWindow(QMainWindow):
                     return False
     
     def shot(self, who: str, zone: int, widget, *args):
+        
         calculate_value_from_game_statistic(f"{who}_shots", 1)
         calculate_value_from_game_statistic(f"{who}_available_shots", -1)
-        zone += 1
         sea_image = QPixmap('data\images\game\sea.png').scaled(QSize(30, 30))
         ship_image = QPixmap('data\images\game\ship1.png').scaled(QSize(30, 30))
         fire_image = QPixmap('data/images/game/fire1.png').scaled(QSize(30, 30))
@@ -963,11 +1195,11 @@ class MainWindow(QMainWindow):
                 widget.setIcon(QIcon(fire_image))
                 calculate_value_from_game_statistic(f"player_hit", 1)
                 calculate_value_from_game_statistic(f"cpu_ships", -1)
-                hit_sound.hit_sound_start()
+                self.music_and_sounds('sound', 'hit_start')
             elif check == 'shot':
                 widget.setIcon(QIcon(shot_image))
                 calculate_value_from_game_statistic(f"player_missed", 1)
-                shot_sound.shot_sound_start()
+                self.music_and_sounds('sound', 'shot_start')
             
             if get_value_from_game_statistics('player_available_shots') == 0:
                 self.cpu_turn()
@@ -976,36 +1208,36 @@ class MainWindow(QMainWindow):
             
             check = checking_zone_brom_board('player', zone)
             if check == 'fire':
-                self.player_board[zone -1].setIcon(QIcon(fire_image))
+                self.player_board[zone].setIcon(QIcon(fire_image))
                 calculate_value_from_game_statistic(f"cpu_hit", 1)
                 calculate_value_from_game_statistic(f"player_ships", -1)
+                self.music_and_sounds('sound', 'hit_start')
             elif check == 'shot':
-                self.player_board[zone - 1].setIcon(QIcon(shot_image))
+                self.player_board[zone].setIcon(QIcon(shot_image))
                 calculate_value_from_game_statistic(f"cpu_missed", 1)
+                self.music_and_sounds('sound', 'shot_start')
         
         if get_value_from_game_statistics('player_ships') == 0:
             self.end_game('cpu')
+            return
         elif get_value_from_game_statistics('cpu_ships') == 0:
             self.end_game('player')
+            return
         
         self.stat()
     
     def end_game(self, winner: str):
         self.end_time_game = time.time()
         self.total_time_game = str(round((self.end_time_game - self.start_time_game) / 60, 2)) + ' min.'
-        for i in range(0, len(self.cpu_board)):
+        for i in range(0, 100):
             try:
-                self.cpu_board[i].clicked.disconnect()
+                self.cpu_board[i].disconnect()
             except TypeError:
                 pass
         
         self.stat()
-        turns = get_value_from_game_statistics('turns')
-        player_name = get_value_from_game_statistics(f"{winner}_name")
-        effective = get_value_from_game_statistics(f"{winner}_effective")
-        message = f"Win {player_name} after {turns} and {self.total_time_game}. Full effective - {effective}."
-        print(message)
-        add_high_scores(player_name, effective, turns, self.total_time_game)
+        
+        add_high_scores(winner, self.total_time_game)
     
     def ship(self, who: str, zone: int, *args):
         '''Method responsible for the correct placement of ships an the board.'''
@@ -1014,16 +1246,16 @@ class MainWindow(QMainWindow):
             return
         
         # mam nr zone, pobieram aktualny stan ikony
-        checking_zone_icon = get_zone_from_boards(who, zone + 1)
+        checking_zone_icon = get_zone_from_boards(who, zone)
         sea_image = QPixmap('data\images\game\sea.png').scaled(QSize(30, 30))
         ship_image = QPixmap('data\images\game\ship1.png').scaled(QSize(30, 30))
         if checking_zone_icon.pixmap(checking_zone_icon.availableSizes()[0]).toImage() == sea_image.toImage():
             if self.level_game(who) == get_value_from_game_statistics(f"{who}_ships"):
                 return
-            update_boards_table(who, 'ship', zone + 1)
+            update_boards_table(who, 'ship', zone)
             calculate_value_from_game_statistic(f"{who}_ships", 1)
         elif checking_zone_icon.pixmap(checking_zone_icon.availableSizes()[0]).toImage() == ship_image.toImage():
-            update_boards_table(who, 'sea', zone + 1)
+            update_boards_table(who, 'sea', zone)
             calculate_value_from_game_statistic(f"{who}_ships", -1)
         
         try:
@@ -1035,7 +1267,7 @@ class MainWindow(QMainWindow):
     def random_fleet(self, who: str):
         '''Method responsible for randomly placing ships on boards of both sides.'''
         while get_value_from_game_statistics(f'{who}_ships') < self.level_game(who):
-            random_zone = random.randint(1, 100)
+            random_zone = random.randint(0, 99)
             if who == 'player':
                 self.ship(who='player', zone=random_zone)
             elif who == 'cpu':
@@ -1044,7 +1276,7 @@ class MainWindow(QMainWindow):
     
     def clear_player_board(self):
         '''Method clear the player's board.'''
-        for zone_num in range(1, 101):
+        for zone_num in range(0, 100):
             update_boards_table('player', 'sea', zone_num)
         update_game_statistics_table('player_ships', 0)
         self.player_fleet_layout()
@@ -1072,15 +1304,49 @@ class MainWindow(QMainWindow):
     
     def reset_game(self):
         '''Method responsible for restoring game settings to the starting settings, without having to restart the application.'''
-        for zone in range(1, 101):
+        self.main_menu_buttons_list[0].setText('Start Battle')
+        self.main_menu_buttons_list[1].setEnabled(True)
+        self.main_menu_buttons_list[2].setEnabled(True)
+        self.main_menu_buttons_list[3].setEnabled(True)
+        for zone in range(0, 100):
             update_boards_table('player', 'sea', zone)
             update_boards_table('cpu', 'sea', zone)
         game_statistics_table_default()
         self.main_info.setText('All game settings have been reset!')
         
-        timer = QTimer()
-        timer.timeout.connect(lambda: self.main_info.setText('załatwione'))
-        timer.start(1000)
+        # timer = QTimer()
+        # timer.timeout.connect(lambda: self.main_info.setText('załatwione'))
+        # timer.start(1000)
+    
+    def music_and_sounds(self, sound=None, action=None, stan=None):
+        
+        # MUSIC music
+        if sound == 'music':
+            
+            if stan is not None:
+                update_game_statistics_table('music', stan)
+            
+            if stan == 1:
+                main_music.main_music_start()
+            elif stan == 0:
+                main_music.main_music_stop()
+        
+        # SOUNDS hit, shot, sea
+        if sound == 'sound':
+            
+            if stan is not None:
+                update_game_statistics_table('sounds', stan)
+            
+            play = get_value_from_game_statistics('sounds') == 1
+            
+            if action == 'hit_start' and play:
+                hit_sound.hit_sound_start()
+            elif action == 'shot_start' and play:
+                shot_sound.shot_sound_start()
+            elif action == 'sea_start' and play:
+                sea_sound.sea_sound_start()
+            elif action == 'sea_stop':
+                sea_sound.sea_sound_stop()
     
     def resizeEvent(self, event):
         size_window = event.size()
@@ -1107,11 +1373,17 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = MainWindow()
     
+    main_music = MainMusic()
     sea_sound = SeaSound()
     shot_sound = ShotSound()
     hit_sound = HitSound()
     
+    if bool(get_value_from_game_statistics('music')):
+        main_music.main_music_start()
+    
     app.setStyleSheet(style_sheet)
-    # window.show()
-    window.showMaximized()
+    
+    window.show()
+    # window.showMaximized()
+    
     sys.exit(app.exec())

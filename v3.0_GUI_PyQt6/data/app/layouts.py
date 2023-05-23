@@ -9,3 +9,4 @@ from PyQt6.QtSql import QSqlDatabase, QSqlQuery
 from PyQt6 import QtCore, QtGui
 from PyQt6.QtCore import QUrl
 from PyQt6.QtMultimedia import QSoundEffect
+

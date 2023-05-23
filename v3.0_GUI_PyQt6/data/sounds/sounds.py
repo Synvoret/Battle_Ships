@@ -8,6 +8,23 @@ from PyQt6.QtMultimedia import QSoundEffect, QMediaPlayer, QAudioOutput
 import time
 
 
+class MainMusic:
+    
+    def __init__(self):
+        self.mainM = QMediaPlayer()
+        self.audioOutput = QAudioOutput()
+        self.mainM.setAudioOutput(self.audioOutput)
+        self.mainM.setSource(QUrl.fromLocalFile('data\sounds\pirate-music-14288.mp3'))
+        self.start_volume = 0.2
+        self.audioOutput.setVolume(self.start_volume)
+    
+    def main_music_start(self):
+        self.mainM.play()
+    
+    def main_music_stop(self):
+        self.mainM.stop()
+
+
 class SeaSound:
     
     def __init__(self):
