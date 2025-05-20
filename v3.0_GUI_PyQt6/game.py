@@ -136,7 +136,7 @@ class MainWindow(QMainWindow):
         self.action_save_game.setEnabled(False)
         self.action_settings = QAction("Settings", self)
         self.action_settings.setObjectName("settings")
-        self.action_settings.setIcon(QIcon(r"data\images\main\settings.png"))
+        self.action_settings.setIcon(QIcon(r"data/images/main/settings.png"))
         self.action_settings.triggered.connect(self.settings_layout)
         self.action_high_scores = QAction("High Scores", self)
         self.action_high_scores.setObjectName("high_scores")
@@ -864,7 +864,7 @@ class MainWindow(QMainWindow):
         # saves
         loads = read_files_list()
         save_positions = [QPushButton(load[0]) for load in loads]
-        load_image = QPixmap("data\images\main\load.png").scaled(QSize(30, 30))
+        load_image = QPixmap(r"data/images/main/load.png").scaled(QSize(30, 30))
         load_icon = QIcon(load_image)
 
         def set_icon(button, buttons=save_positions):
@@ -976,7 +976,7 @@ class MainWindow(QMainWindow):
 
     def save_game_layout(self):
         loads = read_files_list()
-        save_image = QPixmap("data\images\main\save.PNG").scaled(QSize(30, 30))
+        save_image = QPixmap(r"data/images/main/save.PNG").scaled(QSize(30, 30))
         save_icon = QIcon(save_image)
         d = {}
 
@@ -1524,7 +1524,7 @@ class MainWindow(QMainWindow):
         bottom_left_corner = (-10, -9, 1)  # if zone 90
         left_side = (-10, -9, 1, 10, 11)  # if zones from 10 to 80 every 10
         inside = (-11, -10, -9, -1, 1, 9, 10, 11)  # if rest of cases
-        ship_image = QPixmap("data\images\game\ship1.png").scaled(QSize(30, 30))
+        ship_image = QPixmap(r"data/images/game/ship1.png").scaled(QSize(30, 30))
 
         # in SENDING ships (move = 'ship')
         if checking_zone == 0:
@@ -1640,10 +1640,10 @@ class MainWindow(QMainWindow):
     def shot(self, who: str, zone: int, widget, *args):
         calculate_value_from_game_statistic(f"{who}_shots", 1)
         calculate_value_from_game_statistic(f"{who}_available_shots", -1)
-        sea_image = QPixmap("data\images\game\sea.png").scaled(QSize(30, 30))
-        ship_image = QPixmap("data\images\game\ship1.png").scaled(QSize(30, 30))
-        fire_image = QPixmap("data/images/game/fire1.png").scaled(QSize(30, 30))
-        shot_image = QPixmap("data\images\game\missed1.png").scaled(QSize(30, 30))
+        sea_image = QPixmap(r"data/images/game/sea.png").scaled(QSize(30, 30))
+        ship_image = QPixmap(r"data/images/game/ship1.png").scaled(QSize(30, 30))
+        fire_image = QPixmap(r"data/images/game/fire1.png").scaled(QSize(30, 30))
+        shot_image = QPixmap(r"data/images/game/missed1.png").scaled(QSize(30, 30))
 
         if who == "player":
             check = checking_zone_brom_board("cpu", zone)
@@ -1705,8 +1705,8 @@ class MainWindow(QMainWindow):
 
         # mam nr zone, pobieram aktualny stan ikony
         checking_zone_icon = get_zone_from_boards(who, zone)
-        sea_image = QPixmap("data\images\game\sea.png").scaled(QSize(30, 30))
-        ship_image = QPixmap("data\images\game\ship1.png").scaled(QSize(30, 30))
+        sea_image = QPixmap(r"data/images/game/sea.png").scaled(QSize(30, 30))
+        ship_image = QPixmap(r"data/images/game/ship1.png").scaled(QSize(30, 30))
         if (
             checking_zone_icon.pixmap(checking_zone_icon.availableSizes()[0]).toImage()
             == sea_image.toImage()
@@ -1827,7 +1827,7 @@ class MainWindow(QMainWindow):
 
 
 # opening file with style sheets
-with open("data/styles/styles.css", "r") as file:
+with open(r"data/styles/styles.css", "r") as file:
     style_sheet = file.read()
 
 if __name__ == "__main__":
